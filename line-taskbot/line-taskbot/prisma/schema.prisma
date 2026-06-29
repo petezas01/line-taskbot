@@ -1,0 +1,113 @@
+// LINE Task Bot — Database Schema
+// ใช้ PostgreSQL (Railway / Supabase)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==============================
+// Task — งานแต่ละชิ้น
+// ==============================
+model Task {
+  id          String     @id @default(cuid())
+  groupId     String                         // LINE Group ID ที่สร้างงาน
+  title       String                         // ชื่องาน
+  description String?                        // รายละเอียด (ถ้ามี)
+  deadline    DateTime                       // วันหมดเขต
+  status      TaskStatus @default(PENDING)   // สถานะงาน
+  submitUrl   String?                        // Link ที่ผู้รับส่งมา
+  rejectNote  String?                        // หมายเหตุเมื่อ Reject
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  creatorId   String
+  creator     Member     @relation("CreatedTasks", fields: [creatorId], references: [id])
+  assignees   TaskAssignee[]
+  reminders   Reminder[]
+
+  @@index([groupId])
+  @@index([status])
+  @@index([deadline])
+}
+
+// ==============================
+// TaskAssignee — ผู้รับผิดชอบ (หลายคนต่องาน)
+// ==============================
+model TaskAssignee {
+  id            String           @id @default(cuid())
+  taskId        String
+  memberId      String
+  submitStatus  SubmitStatus     @default(PENDING)
+  submittedAt   DateTime?
+  submitUrl     String?
+
+  task    Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  member  Member @relation(fields: [memberId], references: [id])
+
+  @@unique([taskId, memberId])
+}
+
+// ==============================
+// Member — สมาชิกในกลุ่ม LINE
+// ==============================
+model Member {
+  id          String  @id @default(cuid())
+  lineUserId  String  @unique                // LINE userId จาก profile
+  displayName String
+  pictureUrl  String?
+  groupId     String                         // กลุ่มที่สังกัด
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdTasks   Task[]         @relation("CreatedTasks")
+  assignedTasks  TaskAssignee[]
+
+  @@index([lineUserId])
+  @@index([groupId])
+}
+
+// ==============================
+// Reminder — log การแจ้งเตือน
+// ==============================
+model Reminder {
+  id        String       @id @default(cuid())
+  taskId    String
+  type      ReminderType
+  sentAt    DateTime     @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+// ==============================
+// Enums
+// ==============================
+enum TaskStatus {
+  PENDING      // รอดำเนินการ
+  IN_PROGRESS  // กำลังทำ
+  SUBMITTED    // ส่งแล้ว รอ Approve
+  APPROVED     // อนุมัติแล้ว ✅
+  REJECTED     // ส่งคืน ❌
+  CANCELLED    // ยกเลิก
+}
+
+enum SubmitStatus {
+  PENDING
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum ReminderType {
+  FRIENDLY_24H    // เตือนล่วงหน้า 24 ชม.
+  FRIENDLY_3H     // เตือนล่วงหน้า 3 ชม.
+  DAILY_SUMMARY   // สรุปยามเช้า
+  OVERDUE_ALERT   // เกินกำหนด
+}

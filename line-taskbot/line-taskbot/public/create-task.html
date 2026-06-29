@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>สร้างงานใหม่</title>
+  <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #222; }
+
+    .header { background: #5B5FEF; padding: 16px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 10; }
+    .header h1 { color: #fff; font-size: 17px; font-weight: 600; }
+    .back-btn { background: none; border: none; color: #fff; font-size: 22px; cursor: pointer; padding: 0 4px; }
+
+    .form { padding: 16px; display: flex; flex-direction: column; gap: 16px; padding-bottom: 100px; }
+
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label { font-size: 13px; font-weight: 600; color: #444; }
+    .field input, .field textarea, .field select {
+      border: 1.5px solid #ddd; border-radius: 10px; padding: 12px 14px;
+      font-size: 15px; color: #222; background: #fff; width: 100%;
+      -webkit-appearance: none;
+    }
+    .field input:focus, .field textarea:focus {
+      outline: none; border-color: #5B5FEF;
+    }
+    .field textarea { min-height: 80px; resize: none; }
+
+    .date-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    .assignee-section { display: flex; flex-direction: column; gap: 8px; }
+    .tags-wrap { display: flex; flex-wrap: wrap; gap: 8px; min-height: 36px; }
+    .tag { background: #EEF0FF; color: #5B5FEF; border-radius: 20px; padding: 6px 12px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
+    .tag button { background: none; border: none; color: #999; font-size: 14px; cursor: pointer; padding: 0; line-height: 1; }
+    .add-person { display: flex; gap: 8px; }
+    .add-person input { flex: 1; border: 1.5px dashed #ccc; border-radius: 10px; padding: 10px 14px; font-size: 14px; color: #222; background: #fff; }
+    .add-person input:focus { outline: none; border-color: #5B5FEF; border-style: solid; }
+    .add-btn { background: #5B5FEF; color: #fff; border: none; border-radius: 10px; padding: 10px 16px; font-size: 14px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+
+    .footer { position: fixed; bottom: 0; left: 0; right: 0; padding: 16px; background: #fff; border-top: 1px solid #eee; }
+    .submit-btn { background: #5B5FEF; color: #fff; border: none; border-radius: 12px; padding: 16px; font-size: 16px; font-weight: 600; width: 100%; cursor: pointer; }
+    .submit-btn:disabled { background: #ccc; }
+    .submit-btn:active { transform: scale(0.98); }
+
+    .error { color: #E53935; font-size: 12px; }
+    .loading { text-align: center; padding: 40px; color: #888; }
+
+    .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+    .toast.show { opacity: 1; }
+
+    .quick-dates { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+    .quick-date { background: #f0f0f0; border: none; border-radius: 20px; padding: 6px 12px; font-size: 12px; color: #555; cursor: pointer; }
+    .quick-date:active { background: #EEF0FF; color: #5B5FEF; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>สร้างงานใหม่</h1>
+</div>
+
+<div class="form" id="form">
+  <div class="field">
+    <label>ชื่องาน *</label>
+    <input type="text" id="taskTitle" placeholder="เช่น ทำ Presentation Q3" maxlength="100"/>
+    <span class="error" id="titleError"></span>
+  </div>
+
+  <div class="field">
+    <label>ผู้รับผิดชอบ *</label>
+    <div class="assignee-section">
+      <div class="tags-wrap" id="tagsWrap"></div>
+      <div class="add-person">
+        <input type="text" id="personInput" placeholder="ชื่อสมาชิก เช่น Arm" maxlength="30"/>
+        <button class="add-btn" onclick="addPerson()">+ เพิ่ม</button>
+      </div>
+      <span class="error" id="assigneeError"></span>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>กำหนดส่ง *</label>
+    <div class="date-row">
+      <input type="date" id="deadlineDate"/>
+      <input type="time" id="deadlineTime" value="10:00"/>
+    </div>
+    <div class="quick-dates">
+      <button class="quick-date" onclick="setQuickDate(0)">วันนี้</button>
+      <button class="quick-date" onclick="setQuickDate(1)">พรุ่งนี้</button>
+      <button class="quick-date" onclick="setQuickDate(3)">3 วัน</button>
+      <button class="quick-date" onclick="setQuickDate(7)">อาทิตย์หน้า</button>
+    </div>
+    <span class="error" id="dateError"></span>
+  </div>
+
+  <div class="field">
+    <label>รายละเอียด (ถ้ามี)</label>
+    <textarea id="description" placeholder="รายละเอียดเพิ่มเติม..."></textarea>
+  </div>
+</div>
+
+<div class="footer">
+  <button class="submit-btn" id="submitBtn" onclick="submitTask()">สร้างงาน</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let assignees = [];
+let liffContext = null;
+
+async function initLiff() {
+  try {
+    await liff.init({ liffId: window.LIFF_ID || '__LIFF_ID__' });
+    if (!liff.isLoggedIn()) liff.login();
+    liffContext = liff.getContext();
+  } catch (e) {
+    console.error('LIFF init error:', e);
+  }
+
+  // ตั้งวันที่ default เป็นพรุ่งนี้
+  setQuickDate(1);
+}
+
+function setQuickDate(daysFromNow) {
+  const d = new Date();
+  d.setDate(d.getDate() + daysFromNow);
+  document.getElementById('deadlineDate').value = d.toISOString().split('T')[0];
+}
+
+function addPerson() {
+  const input = document.getElementById('personInput');
+  const name = input.value.trim().replace(/^@/, '');
+  if (!name) return;
+  if (assignees.includes(name)) { showToast('เพิ่มคนนี้แล้วครับ'); return; }
+  assignees.push(name);
+  renderTags();
+  input.value = '';
+  input.focus();
+}
+
+document.getElementById('personInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') addPerson();
+});
+
+function removePerson(name) {
+  assignees = assignees.filter(a => a !== name);
+  renderTags();
+}
+
+function renderTags() {
+  const wrap = document.getElementById('tagsWrap');
+  wrap.innerHTML = assignees.map(name => `
+    <div class="tag">
+      @${name}
+      <button onclick="removePerson('${name}')" aria-label="ลบ ${name}">x</button>
+    </div>
+  `).join('');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+function validate() {
+  let valid = true;
+  document.getElementById('titleError').textContent = '';
+  document.getElementById('assigneeError').textContent = '';
+  document.getElementById('dateError').textContent = '';
+
+  if (!document.getElementById('taskTitle').value.trim()) {
+    document.getElementById('titleError').textContent = 'กรุณาระบุชื่องาน';
+    valid = false;
+  }
+  if (assignees.length === 0) {
+    document.getElementById('assigneeError').textContent = 'กรุณาเพิ่มผู้รับผิดชอบอย่างน้อย 1 คน';
+    valid = false;
+  }
+  if (!document.getElementById('deadlineDate').value) {
+    document.getElementById('dateError').textContent = 'กรุณาเลือกวันกำหนดส่ง';
+    valid = false;
+  }
+  return valid;
+}
+
+async function submitTask() {
+  if (!validate()) return;
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = 'กำลังสร้างงาน...';
+
+  const deadline = new Date(
+    document.getElementById('deadlineDate').value + 'T' +
+    (document.getElementById('deadlineTime').value || '10:00') + ':00'
+  );
+
+  const payload = {
+    taskTitle: document.getElementById('taskTitle').value.trim(),
+    assigneeNames: assignees,
+    deadline: deadline.toISOString(),
+    description: document.getElementById('description').value.trim(),
+    groupId: liffContext?.groupId,
+    userId: liff.getDecodedIDToken()?.sub,
+  };
+
+  try {
+    const res = await fetch('/api/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (res.ok) {
+      showToast('สร้างงานแล้วครับ!');
+      setTimeout(() => liff.closeWindow(), 1500);
+    } else {
+      throw new Error('Server error');
+    }
+  } catch (e) {
+    showToast('เกิดข้อผิดพลาด กรุณาลองใหม่');
+    btn.disabled = false;
+    btn.textContent = 'สร้างงาน';
+  }
+}
+
+initLiff();
+</script>
+</body>
+</html>

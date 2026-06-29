@@ -1,0 +1,24 @@
+{
+  "name": "line-taskbot",
+  "version": "1.0.0",
+  "description": "LINE Task Bot — มอบหมาย ตามจิก ตรวจรับ",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@line/bot-sdk": "^9.3.0",
+    "@prisma/client": "^5.14.0",
+    "express": "^4.19.2",
+    "node-cron": "^3.0.3",
+    "dayjs": "^1.11.11",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4",
+    "prisma": "^5.14.0"
+  }
+}
