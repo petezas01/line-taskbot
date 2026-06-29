@@ -16,6 +16,13 @@ async function handleMessage(event) {
 
   if (!groupId) return; // ไม่รับ DM
 
+  // @mention บอต — แสดงเมนูปุ่ม
+  const mentionBot = event.message.mention?.mentionees?.some(m => m.type === "user" && m.isSelf);
+  const textMention = text.toLowerCase().includes("@workbot");
+  if (mentionBot || textMention) {
+    return handleMention(event, groupId);
+  }
+
   // คำสั่งสร้างงาน
   if (text.startsWith("/task")) {
     return handleCreateTask(event, text, groupId, userId);
@@ -30,6 +37,64 @@ async function handleMessage(event) {
   if (text === "/tasks" || text === "/งาน") {
     return handleListTasks(event, groupId);
   }
+}
+
+// ─── แสดงเมนูปุ่มเมื่อถูก @mention ──────────────────────────
+async function handleMention(event, groupId) {
+  const LIFF_ID = process.env.LIFF_ID || "";
+  await lineClient.replyMessage(event.replyToken, {
+    type: "flex",
+    altText: "WorkBot พร้อมช่วยเหลือครับ เลือกสิ่งที่ต้องการได้เลย",
+    contents: {
+      type: "bubble",
+      header: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: "#5B5FEF",
+        paddingAll: "16px",
+        contents: [
+          { type: "text", text: "WorkBot", color: "#ffffff", size: "xs", opacity: 0.8 },
+          { type: "text", text: "จะทำอะไรดีครับ? 🤖", color: "#ffffff", size: "lg", weight: "bold", margin: "sm" },
+        ],
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        paddingAll: "14px",
+        contents: [
+          { type: "text", text: "เลือกสิ่งที่ต้องการจากเมนูด้านล่างได้เลยครับ", size: "sm", color: "#666666", wrap: true },
+        ],
+      },
+      footer: {
+        type: "box",
+        layout: "vertical",
+        spacing: "sm",
+        paddingAll: "12px",
+        contents: [
+          {
+            type: "button",
+            style: "primary",
+            color: "#5B5FEF",
+            action: {
+              type: "uri",
+              label: "➕  สร้างงานใหม่",
+              uri: `https://liff.line.me/${LIFF_ID}`,
+            },
+          },
+          {
+            type: "button",
+            style: "secondary",
+            action: { type: "message", label: "📋  ดูงานทั้งหมด", text: "/tasks" },
+          },
+          {
+            type: "button",
+            style: "secondary",
+            action: { type: "message", label: "✅  งานของฉัน", text: "/mytasks" },
+          },
+        ],
+      },
+    },
+  });
 }
 
 // ─── สร้าง Task ─────────────────────────────────────────────
